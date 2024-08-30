@@ -1,10 +1,8 @@
 import { Redis } from "@upstash/redis";
 import axios, { AxiosError } from "axios";
 import dotenv from "dotenv";
-import uniFarcasterSdk from "uni-farcaster-sdk";
 import config from "./utils/config.js";
 import { BlockedData, BlockedFetchResult, User } from "./utils/types.js";
-import fs from "fs";
 import { createCast, getUsers } from "./utils/queries.js";
 import { CronJob } from "cron";
 
@@ -51,7 +49,6 @@ async function main() {
     if (!lastUser) {
       console.log("No last user found");
       const newLastUser = users[0];
-      fs.writeFileSync("users.json", JSON.stringify(users));
       await kvStore.set(lastUserKey, newLastUser);
       processBlockedUsers(users);
       return;
@@ -150,11 +147,9 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
       );
     }
   }
-  fs.writeFileSync("texts.txt", texts.join("\n"));
   console.log("Creating cast...");
-  const newCast = await createCast(texts.join("\n"));
+  await createCast(texts.join("\n"));
   console.log("Cast created");
-  fs.writeFileSync("cast.json", JSON.stringify(newCast));
 }
 
 // Run the fetch function

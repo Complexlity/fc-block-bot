@@ -17,9 +17,6 @@ dependencies:
   dotenv:
     specifier: ^16.4.5
     version: 16.4.5
-  uni-farcaster-sdk:
-    specifier: ^0.0.17
-    version: 0.0.17
   zod:
     specifier: ^3.23.8
     version: 3.23.8
@@ -141,14 +138,6 @@ packages:
   /undici-types@6.19.8:
     resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
     dev: true
-
-  /uni-farcaster-sdk@0.0.17:
-    resolution: {integrity: sha512-XEHclCASebJMMfTBMV3OK+a1+AVZmJLcxm4LyHhqN4BH9jPUWnyT4pCO0Ajs3Bp38IoN2tcZvQUMN07caZbrcw==}
-    dependencies:
-      axios: 1.7.5
-    transitivePeerDependencies:
-      - debug
-    dev: false
 
   /zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}

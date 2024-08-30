@@ -10,7 +10,9 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": false,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "outDir": "dist",
+    "resolveJsonModule": true
   },
   "exclude": ["node_modules", "dist", "scripts"]
 }
