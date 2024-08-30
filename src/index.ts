@@ -1,0 +1,161 @@
+import { Redis } from "@upstash/redis";
+import axios, { AxiosError } from "axios";
+import dotenv from "dotenv";
+import uniFarcasterSdk from "uni-farcaster-sdk";
+import config from "./utils/config.js";
+import { BlockedData, BlockedFetchResult, User } from "./utils/types.js";
+import fs from "fs";
+import { createCast, getUsers } from "./utils/queries.js";
+import { CronJob } from "cron";
+
+dotenv.config();
+
+const job = new CronJob(
+  //Run every minute
+  "* * * * *",
+  main,
+  null,
+  true,
+  "America/Los_Angeles"
+);
+
+const kvStore = new Redis({
+  url: config.REDIS_URL,
+  token: config.REDIS_TOKEN,
+});
+
+const BLOCKED_API_URL = "https://api.warpcast.com/v1/blocked-users";
+const lastUserKey = "lastBlockedUser";
+
+async function main() {
+  const lastUser: BlockedData | null = await kvStore.get(lastUserKey);
+
+  let fetchedUsers: BlockedData[] = [];
+  let cursor: string | null = null;
+
+  while (true) {
+    let res;
+    try {
+      const url = new URL(BLOCKED_API_URL);
+      if (cursor) {
+        url.searchParams.append("cursor", cursor);
+      }
+      res = await axios.get<BlockedFetchResult>(url.toString());
+    } catch (error) {
+      handleError(error);
+      return;
+    }
+
+    const { data } = res;
+    const users = data.result.blockedUsers;
+    if (!lastUser) {
+      console.log("No last user found");
+      const newLastUser = users[0];
+      fs.writeFileSync("users.json", JSON.stringify(users));
+      await kvStore.set(lastUserKey, newLastUser);
+      processBlockedUsers(users);
+      return;
+    }
+
+    const lastUserIndex = users.findIndex(
+      (user) =>
+        user.blockerFid === lastUser.blockerFid &&
+        user.blockedFid === lastUser.blockedFid &&
+        user.createdAt === lastUser.createdAt
+    );
+
+    if (lastUserIndex !== -1) {
+      fetchedUsers.push(...users.slice(0, lastUserIndex));
+      break;
+    } else {
+      fetchedUsers.push(...users);
+      if (data.next?.cursor) {
+        cursor = data.next.cursor;
+      } else {
+        break; // No more pages to fetch
+      }
+    }
+  }
+
+  if (fetchedUsers.length > 0) {
+    // Save the first user as the new lastUser
+    const newLastUser = fetchedUsers[0];
+    await kvStore.set(lastUserKey, newLastUser);
+    processBlockedUsers(fetchedUsers);
+  } else {
+    console.log("No new blocked users found");
+  }
+}
+
+function handleError(error: unknown) {
+  if (error instanceof AxiosError) {
+    console.log(error.toJSON());
+  } else if (error instanceof Error) {
+    console.log(error.message);
+  } else if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message.length > 0
+  ) {
+    console.log(error.message);
+  } else {
+    console.log(error);
+  }
+}
+
+function getRandomClassifier() {
+  const classifiers = [
+    " finally",
+    " indeed",
+    " now",
+    " silently",
+    " sneakily",
+    " eventually",
+    "",
+  ];
+  return classifiers[Math.floor(Math.random() * classifiers.length)];
+}
+
+async function processBlockedUsers(blockedData: BlockedData[]) {
+  // Implement your logic here to process the blocked users
+  const texts: string[] = [];
+  const fidsSet = new Set<number>();
+  for (const user of blockedData) {
+    fidsSet.add(user.blockedFid);
+    fidsSet.add(user.blockerFid);
+  }
+  const fidsArray = [...fidsSet];
+  const res = await getUsers(fidsArray);
+  if (!res) {
+    return null;
+  }
+  const users = res.users;
+  //convert users to an object with fid as key
+  const usersObj = users.reduce((acc, user) => {
+    //@ts-expect-error
+    acc[user.fid] = user;
+    return acc;
+  }, {}) as { [key: number]: User };
+
+  for (const user of blockedData) {
+    const blockerDetails = usersObj[user.blockerFid];
+    const blockedDetails = usersObj[user.blockedFid];
+    if (blockerDetails && blockedDetails) {
+      texts.push(
+        `@xx${blockerDetails.username} has${getRandomClassifier()} blocked @xx${
+          blockedDetails.username
+        }`
+      );
+    }
+  }
+  fs.writeFileSync("texts.txt", texts.join("\n"));
+  console.log("Creating cast...");
+  const newCast = await createCast(texts.join("\n"));
+  console.log("Cast created");
+  fs.writeFileSync("cast.json", JSON.stringify(newCast));
+}
+
+// Run the fetch function
+main().catch((error) => console.error("Error running fetch:", error));
