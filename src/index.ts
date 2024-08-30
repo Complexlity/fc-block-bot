@@ -13,7 +13,7 @@ const job = new CronJob(
   "* * * * *",
   main,
   null,
-  true,
+  config.START_CRON_JOB,
   "America/Los_Angeles"
 );
 
