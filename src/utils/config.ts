@@ -23,7 +23,7 @@ const config = configSchema.parse({
   NEYNAR_API_KEY,
   SIGNER_UUID,
   MAX_CAST_LENGTH: 900,
-  START_CRON_JOB: START_CRON_JOB !== "false",
+  START_CRON_JOB: START_CRON_JOB === "true",
 });
 
 export default config;
