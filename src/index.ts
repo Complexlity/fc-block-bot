@@ -141,7 +141,7 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     const blockedDetails = usersObj[user.blockedFid];
     if (blockerDetails && blockedDetails) {
       texts.push(
-        `@x${blockerDetails.username} has${getRandomClassifier()} blocked @x${
+        `@${blockerDetails.username} has${getRandomClassifier()} blocked @${
           blockedDetails.username
         }`
       );
