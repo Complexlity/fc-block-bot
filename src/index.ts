@@ -170,6 +170,3 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     console.log("Cast created");
   }
 }
-
-// Run the fetch function
-main().catch((error) => console.error("Error running fetch:", error));
