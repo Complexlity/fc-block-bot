@@ -1,7 +1,6 @@
 import axios from "axios";
 import config from "./config.js";
 import { NeynarUsersFetchResult } from "./types.js";
-import fs from "fs";
 const CAST_API_URL = "https://api.neynar.com/v2/farcaster/cast";
 
 async function generateIdempotencyKey(input: string) {
@@ -28,7 +27,6 @@ async function generateIdempotencyKey(input: string) {
 
 export async function createCast(text: string) {
   const idempotencyKey = await generateIdempotencyKey(text);
-  fs.writeFileSync(`${idempotencyKey}.txt`, text);
 
   const body = {
     signer_uuid: config.SIGNER_UUID,
@@ -46,7 +44,6 @@ export async function createCast(text: string) {
       headers,
     });
     console.log("Cast created successfully");
-    console.log(res.data);
     return res.data;
   } catch (error) {
     console.error("Error creating cast:", error);

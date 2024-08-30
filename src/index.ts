@@ -167,6 +167,5 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     console.log({ chunkLength: chunk.length });
     console.log("Creating cast...");
     await createCast(chunk);
-    console.log("Cast created");
   }
 }
