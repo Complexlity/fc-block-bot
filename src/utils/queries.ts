@@ -43,6 +43,8 @@ export async function createCast(text: string) {
     const res = await axios.post(CAST_API_URL, body, {
       headers,
     });
+    console.log("Cast created successfully");
+    console.log(res.data);
     return res.data;
   } catch (error) {
     console.error("Error creating cast:", error);
