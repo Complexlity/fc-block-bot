@@ -7,6 +7,7 @@ export async function createCast(text: string) {
   const body = {
     signer_uuid: config.SIGNER_UUID,
     text,
+    channel_id: "blockzone",
   };
 
   const headers = {

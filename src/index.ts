@@ -22,6 +22,8 @@ const kvStore = new Redis({
   token: config.REDIS_TOKEN,
 });
 
+const MAX_CAST_LENGTH = 900;
+
 const BLOCKED_API_URL = "https://api.warpcast.com/v1/blocked-users";
 const lastUserKey = "lastBlockedUser";
 
@@ -141,15 +143,34 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     const blockedDetails = usersObj[user.blockedFid];
     if (blockerDetails && blockedDetails) {
       texts.push(
-        `@xx${blockerDetails.username} has${getRandomClassifier()} blocked @xx${
+        `@x${blockerDetails.username} has${getRandomClassifier()} blocked @x${
           blockedDetails.username
         }`
       );
     }
   }
-  console.log("Creating cast...");
-  await createCast(texts.join("\n"));
-  console.log("Cast created");
+
+  let textString = texts.join("\n");
+  const castedChunks = [];
+  while (textString.length > 0) {
+    //Break at the closes \n before the 1000 mark
+    const index = textString.indexOf("\n", 900);
+    if (index === -1) {
+      castedChunks.push(textString);
+      break;
+    }
+    const chunk = textString.slice(0, index);
+    castedChunks.push(chunk);
+    textString = textString.slice(index + 1);
+  }
+
+  //divide text string into chunks of 900 characters
+  for (const chunk of castedChunks) {
+    console.log({ chunkLength: chunk.length });
+    console.log("Creating cast...");
+    await createCast(chunk);
+    console.log("Cast created");
+  }
 }
 
 // Run the fetch function
