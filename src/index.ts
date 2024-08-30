@@ -22,8 +22,6 @@ const kvStore = new Redis({
   token: config.REDIS_TOKEN,
 });
 
-const MAX_CAST_LENGTH = 900;
-
 const BLOCKED_API_URL = "https://api.warpcast.com/v1/blocked-users";
 const lastUserKey = "lastBlockedUser";
 
@@ -154,7 +152,7 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
   const castedChunks = [];
   while (textString.length > 0) {
     //Break at the closes \n before the 1000 mark
-    const index = textString.indexOf("\n", 900);
+    const index = textString.indexOf("\n", config.MAX_CAST_LENGTH);
     if (index === -1) {
       castedChunks.push(textString);
       break;

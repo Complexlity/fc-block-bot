@@ -8,6 +8,7 @@ const configSchema = z.object({
   REDIS_TOKEN: z.string(),
   NEYNAR_API_KEY: z.string(),
   SIGNER_UUID: z.string(),
+  MAX_CAST_LENGTH: z.number(),
 });
 const REDIS_URL = process.env.REDIS_URL;
 const REDIS_TOKEN = process.env.REDIS_TOKEN;
@@ -19,6 +20,7 @@ const config = configSchema.parse({
   REDIS_TOKEN,
   NEYNAR_API_KEY,
   SIGNER_UUID,
+  MAX_CAST_LENGTH: 900,
 });
 
 export default config;
