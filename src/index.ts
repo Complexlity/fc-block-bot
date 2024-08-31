@@ -17,6 +17,9 @@ const job = new CronJob(
   "America/Los_Angeles"
 );
 
+const BLOCKED_KEY = "blocked_users";
+const BLOCKER_KEY = "blocker_users";
+// const CURSOR_KEY = "lastCursors";
 const sdkInstance = new uniFarcasterSdk({
   neynarApiKey: config.NEYNAR_API_KEY,
 });
@@ -30,7 +33,6 @@ const BLOCKED_API_URL = "https://api.warpcast.com/v1/blocked-users";
 const lastUserKey = "lastBlockedUser";
 
 async function main() {
-  console.log("Running main...");
   const lastUser: BlockedData | null = await kvStore.get(lastUserKey);
   console.log("Last user: ", lastUser);
   let fetchedUsers: BlockedData[] = [];
@@ -79,7 +81,7 @@ async function main() {
   }
 
   if (fetchedUsers.length > 0) {
-    console.log("Fetched users: ", fetchedUsers);
+    console.log("Fetched users: ", fetchedUsers.length);
     await processBlockedUsers(fetchedUsers);
   } else {
     console.log("No new blocked users found");
@@ -119,6 +121,8 @@ function getRandomClassifier() {
 
 async function processBlockedUsers(blockedData: BlockedData[]) {
   let texts = "";
+  let raw = [];
+  let mentionedUsers = [];
   const fidsSet = new Set<number>();
   for (const user of blockedData) {
     fidsSet.add(user.blockedFid);
@@ -139,9 +143,10 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
   const castedChunks: {
     text: string;
     lastUser: BlockedData;
+    raw: BlockedData[];
   }[] = [];
   const reversedBlockedData = [...blockedData].reverse();
-  let mentionedUsers = [];
+
   for (const user of reversedBlockedData) {
     const blockerDetails = usersObj[user.blockerFid];
     const blockedDetails = usersObj[user.blockedFid];
@@ -151,6 +156,7 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
       texts += `@${
         blockerDetails.username
       } has${getRandomClassifier()} blocked @${blockedDetails.username}\n`;
+      raw.push(user);
     }
     if (
       //Check if we're reach the
@@ -160,18 +166,36 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
       castedChunks.push({
         text: texts,
         lastUser: user,
+        raw: raw,
       });
       texts = "";
       mentionedUsers = [];
+      raw = [];
     }
   }
-  console.log(castedChunks);
+
+  if (texts.length > 0 && reversedBlockedData.length > 0) {
+    //Add the last chunk
+    const lastUser = reversedBlockedData.at(-1)!;
+    castedChunks.push({
+      text: texts,
+      lastUser,
+      raw: raw,
+    });
+  }
+
   for (const chunk of castedChunks) {
     console.log("Creating cast...");
     const res = await createCast(chunk.text);
     if (!!res) {
+      const multi = kvStore.multi();
       //cast was created so you can save the last user
-      await kvStore.set(lastUserKey, chunk.lastUser);
+      for (const user of chunk.raw) {
+        multi.zincrby(BLOCKED_KEY, 1, user.blockedFid.toString());
+        multi.zincrby(BLOCKER_KEY, 1, user.blockerFid.toString());
+      }
+      multi.set(lastUserKey, chunk.lastUser);
+      await multi.exec();
     } else {
       return; //Don't do anything if there was an error. Try again next time
     }
