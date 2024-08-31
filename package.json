@@ -21,6 +21,7 @@
     "axios": "^1.7.5",
     "cron": "^3.1.7",
     "dotenv": "^16.4.5",
+    "uni-farcaster-sdk": "^0.0.18",
     "zod": "^3.23.8"
   },
   "engines": {

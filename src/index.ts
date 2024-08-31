@@ -5,17 +5,22 @@ import config from "./utils/config.js";
 import { BlockedData, BlockedFetchResult, User } from "./utils/types.js";
 import { createCast, getUsers } from "./utils/queries.js";
 import { CronJob } from "cron";
+import uniFarcasterSdk from "uni-farcaster-sdk";
 
 dotenv.config();
 
-const job = new CronJob(
-  //Run every minute
-  "* * * * *",
-  main,
-  null,
-  config.START_CRON_JOB,
-  "America/Los_Angeles"
-);
+// const job = new CronJob(
+//   //Run every minute
+//   "* * * * *",
+//   main,
+//   null,
+//   config.START_CRON_JOB,
+//   "America/Los_Angeles"
+// );
+
+const sdkInstance = new uniFarcasterSdk({
+  neynarApiKey: config.NEYNAR_API_KEY,
+});
 
 const kvStore = new Redis({
   url: config.REDIS_URL,
@@ -124,17 +129,17 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     fidsSet.add(user.blockerFid);
   }
   const fidsArray = [...fidsSet];
-  const res = await getUsers(fidsArray);
-  if (!res) {
+  const res = await sdkInstance.getUsersByFid(fidsArray);
+  if (res.error) {
     return null;
   }
-  const users = res.users;
+  const users = res.data;
   //convert users to an object with fid as key
   const usersObj = users.reduce((acc, user) => {
     //@ts-expect-error
     acc[user.fid] = user;
     return acc;
-  }, {}) as { [key: number]: User };
+  }, {}) as { [key: number]: (typeof users)[number] };
 
   for (const user of blockedData) {
     const blockerDetails = usersObj[user.blockerFid];
@@ -169,3 +174,6 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     await createCast(chunk);
   }
 }
+main().then(() => {
+  console.log("Done");
+});
