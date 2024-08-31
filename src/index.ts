@@ -137,32 +137,31 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     lastUser: BlockedData;
   }[] = [];
   const reversedBlockedData = [...blockedData].reverse();
-  let mentionedUsersPerChunk = new Set<number>();
-
+  let mentionedUsers = [];
   for (const user of reversedBlockedData) {
     const blockerDetails = usersObj[user.blockerFid];
     const blockedDetails = usersObj[user.blockedFid];
-    mentionedUsersPerChunk.add(blockerDetails.fid);
-    mentionedUsersPerChunk.add(blockedDetails.fid);
-
+    mentionedUsers.push(blockerDetails.fid);
+    mentionedUsers.push(blockedDetails.fid);
     if (blockerDetails && blockedDetails) {
       texts += `@${
         blockerDetails.username
       } has${getRandomClassifier()} blocked @${blockedDetails.username}\n`;
     }
-
     if (
+      //Check if we're reach the
       texts.length > config.MAX_CAST_LENGTH ||
-      [...mentionedUsersPerChunk].length > 8
+      mentionedUsers.length == 10
     ) {
       castedChunks.push({
         text: texts,
         lastUser: user,
       });
       texts = "";
-      mentionedUsersPerChunk.clear();
+      mentionedUsers = [];
     }
   }
+
   for (const chunk of castedChunks) {
     console.log("Creating cast...");
     const res = await createCast(chunk.text);
