@@ -1,12 +1,11 @@
 import { Redis } from "@upstash/redis";
 import axios, { AxiosError } from "axios";
-import dotenv from "dotenv";
-import config from "./utils/config.js";
-import { BlockedData, BlockedFetchResult, User } from "./utils/types.js";
-import { createCast, getUsers } from "./utils/queries.js";
 import { CronJob } from "cron";
+import dotenv from "dotenv";
 import uniFarcasterSdk from "uni-farcaster-sdk";
-
+import config from "./utils/config.js";
+import { createCast } from "./utils/queries.js";
+import { BlockedData, BlockedFetchResult } from "./utils/types.js";
 dotenv.config();
 
 const job = new CronJob(
@@ -32,7 +31,6 @@ const lastUserKey = "lastBlockedUser";
 
 async function main() {
   const lastUser: BlockedData | null = await kvStore.get(lastUserKey);
-
   let fetchedUsers: BlockedData[] = [];
   let cursor: string | null = null;
 
@@ -53,9 +51,7 @@ async function main() {
     const users = data.result.blockedUsers;
     if (!lastUser) {
       console.log("No last user found");
-      const newLastUser = users[0];
-      await kvStore.set(lastUserKey, newLastUser);
-      processBlockedUsers(users);
+      await processBlockedUsers(users);
       return;
     }
 
@@ -80,10 +76,7 @@ async function main() {
   }
 
   if (fetchedUsers.length > 0) {
-    // Save the first user as the new lastUser
-    const newLastUser = fetchedUsers[0];
-    await kvStore.set(lastUserKey, newLastUser);
-    processBlockedUsers(fetchedUsers);
+    await processBlockedUsers(fetchedUsers);
   } else {
     console.log("No new blocked users found");
   }
@@ -121,8 +114,7 @@ function getRandomClassifier() {
 }
 
 async function processBlockedUsers(blockedData: BlockedData[]) {
-  // Implement your logic here to process the blocked users
-  const texts: string[] = [];
+  let texts = "";
   const fidsSet = new Set<number>();
   for (const user of blockedData) {
     fidsSet.add(user.blockedFid);
@@ -136,41 +128,49 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
   const users = res.data;
   //convert users to an object with fid as key
   const usersObj = users.reduce((acc, user) => {
-    //@ts-expect-error
+    //@ts-expect-error: Ts is not sure if acc[user.fid] should exist
     acc[user.fid] = user;
     return acc;
   }, {}) as { [key: number]: (typeof users)[number] };
+  const castedChunks: {
+    text: string;
+    lastUser: BlockedData;
+  }[] = [];
+  const reversedBlockedData = [...blockedData].reverse();
+  let mentionedUsersPerChunk = new Set<number>();
 
-  for (const user of blockedData) {
+  for (const user of reversedBlockedData) {
     const blockerDetails = usersObj[user.blockerFid];
     const blockedDetails = usersObj[user.blockedFid];
+    mentionedUsersPerChunk.add(blockerDetails.fid);
+    mentionedUsersPerChunk.add(blockedDetails.fid);
+
     if (blockerDetails && blockedDetails) {
-      texts.push(
-        `@${blockerDetails.username} has${getRandomClassifier()} blocked @${
-          blockedDetails.username
-        }`
-      );
+      texts += `@${
+        blockerDetails.username
+      } has${getRandomClassifier()} blocked @${blockedDetails.username}\n`;
+    }
+
+    if (
+      texts.length > config.MAX_CAST_LENGTH ||
+      [...mentionedUsersPerChunk].length > 8
+    ) {
+      castedChunks.push({
+        text: texts,
+        lastUser: user,
+      });
+      texts = "";
+      mentionedUsersPerChunk.clear();
     }
   }
-
-  let textString = texts.join("\n");
-  const castedChunks = [];
-  while (textString.length > 0) {
-    //Break at the closes \n before the 1000 mark
-    const index = textString.indexOf("\n", config.MAX_CAST_LENGTH);
-    if (index === -1) {
-      castedChunks.push(textString);
-      break;
-    }
-    const chunk = textString.slice(0, index);
-    castedChunks.push(chunk);
-    textString = textString.slice(index + 1);
-  }
-
-  //divide text string into chunks of 900 characters
   for (const chunk of castedChunks) {
-    console.log({ chunkLength: chunk.length });
     console.log("Creating cast...");
-    await createCast(chunk);
+    const res = await createCast(chunk.text);
+    if (!!res) {
+      //cast was created so you can save the last user
+      await kvStore.set(lastUserKey, chunk.lastUser);
+    } else {
+      return; //Don't do anything if there was an error. Try again next time
+    }
   }
 }

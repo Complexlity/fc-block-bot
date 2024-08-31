@@ -22,7 +22,7 @@ const config = configSchema.parse({
   REDIS_TOKEN,
   NEYNAR_API_KEY,
   SIGNER_UUID,
-  MAX_CAST_LENGTH: 900,
+  MAX_CAST_LENGTH: 880,
   START_CRON_JOB: START_CRON_JOB === "true",
 });
 
