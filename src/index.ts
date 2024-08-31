@@ -30,7 +30,9 @@ const BLOCKED_API_URL = "https://api.warpcast.com/v1/blocked-users";
 const lastUserKey = "lastBlockedUser";
 
 async function main() {
+  console.log("Running main...");
   const lastUser: BlockedData | null = await kvStore.get(lastUserKey);
+  console.log("Last user: ", lastUser);
   let fetchedUsers: BlockedData[] = [];
   let cursor: string | null = null;
 
@@ -62,6 +64,7 @@ async function main() {
         user.createdAt === lastUser.createdAt
     );
 
+    console.log("Last user index: ", lastUserIndex);
     if (lastUserIndex !== -1) {
       fetchedUsers.push(...users.slice(0, lastUserIndex));
       break;
@@ -76,6 +79,7 @@ async function main() {
   }
 
   if (fetchedUsers.length > 0) {
+    console.log("Fetched users: ", fetchedUsers);
     await processBlockedUsers(fetchedUsers);
   } else {
     console.log("No new blocked users found");
@@ -161,7 +165,7 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
       mentionedUsers = [];
     }
   }
-
+  console.log(castedChunks);
   for (const chunk of castedChunks) {
     console.log("Creating cast...");
     const res = await createCast(chunk.text);
