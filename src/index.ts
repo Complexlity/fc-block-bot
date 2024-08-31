@@ -9,14 +9,14 @@ import uniFarcasterSdk from "uni-farcaster-sdk";
 
 dotenv.config();
 
-// const job = new CronJob(
-//   //Run every minute
-//   "* * * * *",
-//   main,
-//   null,
-//   config.START_CRON_JOB,
-//   "America/Los_Angeles"
-// );
+const job = new CronJob(
+  //Run every minute
+  "* * * * *",
+  main,
+  null,
+  config.START_CRON_JOB,
+  "America/Los_Angeles"
+);
 
 const sdkInstance = new uniFarcasterSdk({
   neynarApiKey: config.NEYNAR_API_KEY,
@@ -174,6 +174,3 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     await createCast(chunk);
   }
 }
-main().then(() => {
-  console.log("Done");
-});
