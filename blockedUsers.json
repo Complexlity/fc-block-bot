@@ -1,0 +1,197 @@
+[
+  {
+    "blockerFid": 380293,
+    "blockedFid": 8446,
+    "createdAt": 1725175807
+  },
+  {
+    "blockerFid": 457478,
+    "blockedFid": 8446,
+    "createdAt": 1725175589
+  },
+  {
+    "blockerFid": 436566,
+    "blockedFid": 245017,
+    "createdAt": 1725175379
+  },
+  {
+    "blockerFid": 447048,
+    "blockedFid": 402676,
+    "createdAt": 1725175349
+  },
+  {
+    "blockerFid": 447048,
+    "blockedFid": 420671,
+    "createdAt": 1725175249
+  },
+  {
+    "blockerFid": 380545,
+    "blockedFid": 245017,
+    "createdAt": 1725174425
+  },
+  {
+    "blockerFid": 380545,
+    "blockedFid": 8446,
+    "createdAt": 1725174411
+  },
+  {
+    "blockerFid": 237884,
+    "blockedFid": 253076,
+    "createdAt": 1725173560
+  },
+  {
+    "blockerFid": 237884,
+    "blockedFid": 478308,
+    "createdAt": 1725173551
+  },
+  {
+    "blockerFid": 503907,
+    "blockedFid": 245017,
+    "createdAt": 1725173503
+  },
+  {
+    "blockerFid": 502568,
+    "blockedFid": 835600,
+    "createdAt": 1725173487
+  },
+  {
+    "blockerFid": 503907,
+    "blockedFid": 8446,
+    "createdAt": 1725173472
+  },
+  {
+    "blockerFid": 274908,
+    "blockedFid": 789160,
+    "createdAt": 1725173459
+  },
+  {
+    "blockerFid": 482953,
+    "blockedFid": 478308,
+    "createdAt": 1725171582
+  },
+  {
+    "blockerFid": 434449,
+    "blockedFid": 245017,
+    "createdAt": 1725170873
+  },
+  {
+    "blockerFid": 434449,
+    "blockedFid": 8446,
+    "createdAt": 1725170853
+  },
+  {
+    "blockerFid": 544076,
+    "blockedFid": 245017,
+    "createdAt": 1725170295
+  },
+  {
+    "blockerFid": 483447,
+    "blockedFid": 448502,
+    "createdAt": 1725169637
+  },
+  {
+    "blockerFid": 340986,
+    "blockedFid": 621286,
+    "createdAt": 1725168987
+  },
+  {
+    "blockerFid": 627459,
+    "blockedFid": 14958,
+    "createdAt": 1725168872
+  },
+  {
+    "blockerFid": 306758,
+    "blockedFid": 8446,
+    "createdAt": 1725168705
+  },
+  {
+    "blockerFid": 245042,
+    "blockedFid": 478308,
+    "createdAt": 1725168609
+  },
+  {
+    "blockerFid": 245042,
+    "blockedFid": 253076,
+    "createdAt": 1725168417
+  },
+  {
+    "blockerFid": 688168,
+    "blockedFid": 8446,
+    "createdAt": 1725168066
+  },
+  {
+    "blockerFid": 329799,
+    "blockedFid": 8446,
+    "createdAt": 1725166843
+  },
+  {
+    "blockerFid": 739943,
+    "blockedFid": 844471,
+    "createdAt": 1725166427
+  },
+  {
+    "blockerFid": 234616,
+    "blockedFid": 478308,
+    "createdAt": 1725165902
+  },
+  {
+    "blockerFid": 814865,
+    "blockedFid": 245017,
+    "createdAt": 1725165764
+  },
+  {
+    "blockerFid": 388505,
+    "blockedFid": 245017,
+    "createdAt": 1725165755
+  },
+  {
+    "blockerFid": 814865,
+    "blockedFid": 8446,
+    "createdAt": 1725165726
+  },
+  {
+    "blockerFid": 383302,
+    "blockedFid": 507920,
+    "createdAt": 1725165724
+  },
+  {
+    "blockerFid": 388505,
+    "blockedFid": 8446,
+    "createdAt": 1725165683
+  },
+  {
+    "blockerFid": 195117,
+    "blockedFid": 520305,
+    "createdAt": 1725165499
+  },
+  {
+    "blockerFid": 195117,
+    "blockedFid": 360265,
+    "createdAt": 1725165480
+  },
+  {
+    "blockerFid": 195117,
+    "blockedFid": 843893,
+    "createdAt": 1725165386
+  },
+  {
+    "blockerFid": 419144,
+    "blockedFid": 245017,
+    "createdAt": 1725165316
+  },
+  {
+    "blockerFid": 19343,
+    "blockedFid": 245017,
+    "createdAt": 1725165302
+  },
+  {
+    "blockerFid": 419144,
+    "blockedFid": 8446,
+    "createdAt": 1725165282
+  },
+  {
+    "blockerFid": 19343,
+    "blockedFid": 8446,
+    "createdAt": 1725165252
+  }
+]
