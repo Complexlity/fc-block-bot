@@ -122,6 +122,8 @@ function getRandomClassifier() {
     " silently",
     " sneakily",
     " eventually",
+    " intentionally",
+    " angrily",
     "",
   ];
   return classifiers[Math.floor(Math.random() * classifiers.length)];
