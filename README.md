@@ -5,28 +5,36 @@ It also posts a ranking of the most blocked users and the most blockers daily
 
 ## Getting Started
 
-- Clone the repository
+1. Clone the repository
 
 ```
 https://github.com/Complexlity/fc-block-bot.git
 cd fc-block-bot
 ```
 
-- Install dependencies
+2. Install dependencies
 
 ```
 pnpm install
 ```
 
-- Rename `.env.sample` to `.env`
+3. Rename `.env.sample` to `.env`
 
-- Get Updated Rankings in your DB
+```.env.sample > .env
+...
+```
+
+4. Get Updated Rankings in your DB
 
 ```
 pnpm run scrape
+
 ```
 
-- Run the bot
+Optional. But recommended if you want the bot to post rankings.
+If you don't, remove START_RANKINGS_JOB=true from .env
+
+5. Run the bot
 
 ```
 pnpm run dev
@@ -36,26 +44,26 @@ pnpm run dev
 
 If you don't have a signer uuid, you can get one with the following steps:
 
-- Updated .env file with the mnemonic of the bot account.
+1. Updated .env file with the mnemonic of the bot account.
 
 ```.env
 ...other variables
 FARCASTER_DEVELOPER_MNEMONIC=<your_farcaster_developer_mnemonic>
 ```
 
-- Install some more dependencies
+2. Install some more dependencies
 
 ```
 pnpm install @farcaster/hub-nodejs @neynar/nodejs-sdk viem
 ```
 
-- Generate Signer UUID
+3. Generate Signer UUID
 
 ```
 pnpm run generate
 ```
 
-- Navigate to the generated file `signerUuid.json`
+4. Navigate to the generated file `signerUuid.json`
 
 ```scripts/signerUuid.json
 {
@@ -66,22 +74,21 @@ pnpm run generate
 }
 ```
 
-- Copy the `signer_approval_url`
+5. Copy the `signer_approval_url`
 
-- Open the link in your mobile browser on a device with the warpcast app installed and the account ()
+6. Open the link in your mobile browser on a device with the warpcast app installed and the account ()
 
-- Approve the request
+7. Approve the request
 
-- Copy the `signer_uuid` from the url
+8. Copy the `signer_uuid` from the url
 
-- Paste the `signer_uuid` as the value of `SIGNER_UUID`in the .env file
+9. Paste the `signer_uuid` as the value of `SIGNER_UUID`in the .env file
 
-- Run the bot
+10. Run the bot
 
 ```
 pnpm run dev
 ```
 
-:::info
-You can remove the extra dependencies once you have a signer
-:::
+> [!NOTE]
+> You can remove the extra dependencies once you have a signer.
