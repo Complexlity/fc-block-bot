@@ -54,12 +54,25 @@ async function main() {
       return;
     }
 
-    const lastUserIndex = users.findIndex(
-      (user) =>
-        user.blockerFid === lastUser.blockerFid &&
-        user.blockedFid === lastUser.blockedFid &&
-        user.createdAt === lastUser.createdAt
-    );
+    // const lastUserIndex = users.findIndex(
+    //   (user) =>
+    //   (user.blockerFid === lastUser.blockerFid &&
+    //     user.blockedFid === lastUser.blockedFid &&
+    //     user.createdAt === lastUser.createdAt)
+    // );
+    let lastUserIndex = -1;
+    for (let i = 0; i < users.length - 1; i++) {
+      const curr = users[i];
+      if (
+        (curr.blockerFid === lastUser.blockerFid &&
+          curr.blockedFid === lastUser.blockedFid &&
+          curr.createdAt === lastUser.createdAt) ||
+        curr.createdAt < lastUser.createdAt
+      ) {
+        lastUserIndex = i;
+        break;
+      }
+    }
 
     console.log("Last user index: ", lastUserIndex);
     if (lastUserIndex !== -1) {
