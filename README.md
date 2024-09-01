@@ -18,26 +18,7 @@ cd fc-block-bot
 pnpm install
 ```
 
-- Create a .env file in the root directory and add the following variables:
-
-```.env
-NEYNAR_API_KEY=your_neynar_api_key
-# Backup for neynar. Can be left blank
-See: https://uni-farcaster-sdk.vercel.app/configuration
-AIRSTACK_API_KEY=your_airstack_api_key
-# DB
-REDIS_URL=your_redis_url
-REDIS_TOKEN=your_redis_token
-//Used for creating cast
-SIGNER_UUID=<your_fc_signer_uuid>
-# Remove or change value if you don't want the cron job running
-START_CRON_JOB=true
-# Remove or change value if you don't want the rankings job running
-START_RANKINGS_JOB=true
-# Optional. Backup for neynar. Can be left blank
-
-
-```
+- Rename `.env.sample` to `.env`
 
 - Get Updated Rankings in your DB
 
@@ -100,3 +81,7 @@ pnpm run generate
 ```
 pnpm run dev
 ```
+
+:::info
+You can remove the extra dependencies once you have a signer
+:::
