@@ -17,8 +17,8 @@ const job = new CronJob(
   "America/Los_Angeles"
 );
 
-const BLOCKED_KEY = "blocked_users_test";
-const BLOCKER_KEY = "blocker_users_test";
+const BLOCKED_KEY = "blocked_users";
+const BLOCKER_KEY = "blocker_users";
 // const CURSOR_KEY = "lastCursors";
 const sdkInstance = new uniFarcasterSdk({
   neynarApiKey: config.NEYNAR_API_KEY,
