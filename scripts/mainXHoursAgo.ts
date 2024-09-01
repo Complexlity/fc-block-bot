@@ -1,9 +1,13 @@
-const THREE_HOURS_IN_SECONDS = 3 * 60 * 60;
+//Script that scrapes the last X hours of blocked users from the API and post casts.
+//Used when there may be an issue with the bot or the API.
+
+const x = 3;
+const X_HOURS_IN_SECONDS = x * 60 * 60;
 
 async function main() {
   let fetchedUsers: BlockedData[] = [];
   let cursor: string | null = null;
-  const threeHoursAgo = Math.floor(Date.now() / 1000) - THREE_HOURS_IN_SECONDS;
+  const threeHoursAgo = Math.floor(Date.now() / 1000) - X_HOURS_IN_SECONDS;
 
   while (true) {
     let res;
@@ -38,10 +42,7 @@ async function main() {
 
   if (fetchedUsers.length > 0) {
     console.log(`Fetched ${fetchedUsers.length} users from the last 3 hours`);
-    fs.writeFileSync(
-      "blockedUsers.json",
-      JSON.stringify(fetchedUsers, null, 2)
-    );
+
     await processBlockedUsers(fetchedUsers);
   } else {
     console.log("No new blocked users found in the last 3 hours");
