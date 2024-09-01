@@ -1,11 +1,11 @@
-import { Redis } from "@upstash/redis";
 import axios, { AxiosError } from "axios";
-import { CronJob } from "cron";
+import { CronJob, timeout } from "cron";
 import dotenv from "dotenv";
-import uniFarcasterSdk from "uni-farcaster-sdk";
 import config from "./utils/config.js";
-import { createCast } from "./utils/queries.js";
+import { DEFAULTS } from "./utils/constants.js";
+import { createCast, postTopRankings } from "./utils/queries.js";
 import { BlockedData, BlockedFetchResult } from "./utils/types.js";
+import { kvStore, sdkInstance } from "./utils/services.js";
 dotenv.config();
 
 const job = new CronJob(
@@ -17,17 +17,12 @@ const job = new CronJob(
   "America/Los_Angeles"
 );
 
-const BLOCKED_KEY = "blocked_users";
-const BLOCKER_KEY = "blocker_users";
-// const CURSOR_KEY = "lastCursors";
-const sdkInstance = new uniFarcasterSdk({
-  neynarApiKey: config.NEYNAR_API_KEY,
-});
+//Post rankings 12:00 AM UTC
+const job2 = new CronJob("0 12 * * *", postTopRankings, null, true);
 
-const kvStore = new Redis({
-  url: config.REDIS_URL,
-  token: config.REDIS_TOKEN,
-});
+const BLOCKED_KEY = DEFAULTS.BLOCKED_KEY;
+const BLOCKER_KEY = DEFAULTS.BLOCKER_KEY;
+// const CURSOR_KEY = "lastCursors";
 
 const BLOCKED_API_URL = "https://api.warpcast.com/v1/blocked-users";
 const lastUserKey = "lastBlockedUser";
@@ -160,7 +155,7 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     }
     if (
       //Check if we're reach the
-      texts.length > config.MAX_CAST_LENGTH ||
+      texts.length > DEFAULTS.MAX_CAST_LENGTH ||
       mentionedUsers.length == 10
     ) {
       castedChunks.push({

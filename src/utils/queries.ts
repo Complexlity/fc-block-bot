@@ -1,6 +1,8 @@
 import axios from "axios";
 import config from "./config.js";
 import { NeynarUsersFetchResult } from "./types.js";
+import { DEFAULTS } from "./constants.js";
+import { kvStore, sdkInstance } from "./services.js";
 const CAST_API_URL = "https://api.neynar.com/v2/farcaster/cast";
 
 async function generateIdempotencyKey(input: string) {
@@ -72,4 +74,144 @@ export async function getUsers(fids: number[]) {
     console.log(error);
     return null;
   }
+}
+
+async function getMostBlockedUsers(n: number) {
+  const result = await kvStore.zrange(DEFAULTS.BLOCKED_KEY, 0, n - 1, {
+    withScores: true,
+    rev: true,
+  });
+  const blockedRanking: any[] = [];
+
+  const fids = [];
+  for (let i = 0; i < result.length; i++) {
+    if (i % 2 === 1) continue;
+    const curr = Number(result[i]);
+    if (isNaN(curr) || !curr) {
+      throw new Error("Invalid fid in blocked users");
+    }
+    blockedRanking.push({
+      fid: curr,
+      count: result[i + 1],
+    });
+    fids.push(curr);
+  }
+  const users = await sdkInstance.getUsersByFid(fids);
+  if (users.error) {
+    console.error(users.error.message);
+    return null;
+  }
+  if (blockedRanking.length !== users.data.length) {
+    console.error("Length mismatch between blocker users and users");
+    return null;
+  }
+
+  console.log(blockedRanking);
+  console.log(users.data);
+
+  return blockedRanking.map((item) => {
+    return {
+      user: users.data.find(
+        (user) => user.fid === item.fid
+      ) as (typeof users.data)[0],
+      count: item.count as number,
+    };
+  });
+}
+
+async function getMostBlockerUsers(n: number) {
+  const result = await kvStore.zrange(DEFAULTS.BLOCKER_KEY, 0, n - 1, {
+    withScores: true,
+    rev: true,
+  });
+
+  const blockerRanking: any[] = [];
+  const fids = [];
+  for (let i = 0; i < result.length; i++) {
+    if (i % 2 === 1) continue;
+    const curr = Number(result[i]);
+    if (isNaN(curr) || !curr) {
+      throw new Error("Invalid fid in blocked users");
+    }
+
+    blockerRanking.push({
+      fid: curr,
+      count: result[i + 1],
+    });
+    fids.push(curr);
+  }
+  const users = await sdkInstance.getUsersByFid(fids);
+  if (users.error) {
+    console.error(users.error.message);
+    return null;
+  }
+  if (blockerRanking.length !== users.data.length) {
+    console.error("Length mismatch between blocker users and users");
+    return null;
+  }
+
+  return blockerRanking.map((item, index) => {
+    return {
+      user: users.data.find(
+        (user) => user.fid === item.fid
+      ) as (typeof users.data)[0],
+      count: item.count as number,
+    };
+  });
+}
+
+type T = Awaited<ReturnType<typeof getMostBlockedUsers>>;
+
+function createTopRankingsCast(
+  items: T,
+  type: "blocked" | "blocker",
+  date: string
+) {
+  if (!items) throw new Error("No items found");
+
+  const blockerTitle = `Most Ruthless Blockers: ${date}\n`;
+  const blockedTitle = `Most Blocked Users: ${date}\n`;
+  let cast = `${type === "blocked" ? blockedTitle : blockerTitle}`;
+  let index = 0;
+  for (const item of items) {
+    const text = `${index + 1}. @${item.user.username} - ${item.count}\n`;
+    cast += text;
+    index++;
+  }
+  return cast;
+}
+
+function formatCurrentDate(): string {
+  const now = new Date();
+
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+
+  let hours = now.getHours();
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  const formattedHours = String(hours).padStart(2, "0");
+
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
+  return `${day}/${month} ${formattedHours}:${minutes} ${ampm}`;
+}
+
+export async function postTopRankings() {
+  const now = formatCurrentDate();
+  const cast1 = createTopRankingsCast(
+    await getMostBlockedUsers(5),
+    "blocked",
+    now
+  );
+  const cast2 = createTopRankingsCast(
+    await getMostBlockerUsers(5),
+    "blocker",
+    now
+  );
+  console.log(cast1);
+  console.log(cast2);
+  // await createCast(cast1);
+  // await createCast(cast2);
 }
