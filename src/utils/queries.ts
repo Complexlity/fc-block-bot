@@ -1,16 +1,10 @@
 import axios from "axios";
 import config from "./config.js";
-import { NeynarUsersFetchResult } from "./types.js";
 import { DEFAULTS } from "./constants.js";
 import { kvStore, sdkInstance } from "./services.js";
 const CAST_API_URL = "https://api.neynar.com/v2/farcaster/cast";
 
 async function generateIdempotencyKey(input: string) {
-  // Ensure the input is a string
-  if (typeof input !== "string") {
-    throw new Error("Input must be a string");
-  }
-
   // Use the SubtleCrypto API to generate a hash
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
@@ -49,28 +43,6 @@ export async function createCast(text: string) {
     return res.data;
   } catch (error) {
     console.error("Error creating cast:", error);
-    console.log(error);
-    return null;
-  }
-}
-
-export async function getUsers(fids: number[]) {
-  try {
-    const users = await axios.get(
-      "https://api.neynar.com/v2/farcaster/user/bulk",
-      {
-        params: {
-          fids: fids.join(","),
-        },
-        headers: {
-          accept: "application/json",
-          api_key: config.NEYNAR_API_KEY,
-        },
-      }
-    );
-    return users.data as NeynarUsersFetchResult;
-  } catch (error) {
-    console.error("Error fetching users:", error);
     console.log(error);
     return null;
   }
