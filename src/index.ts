@@ -14,12 +14,11 @@ const job = new CronJob(
   main,
   null,
   config.START_CRON_JOB,
-  "America/Los_Angeles"
+  "utc"
 );
 
 //Post rankings 12:00 AM UTC
-const job2 = new CronJob("0 12 * * *", postTopRankings, null, true);
-
+const job2 = new CronJob("0 12 * * *", postTopRankings, null, true, "utc");
 const BLOCKED_KEY = DEFAULTS.BLOCKED_KEY;
 const BLOCKER_KEY = DEFAULTS.BLOCKER_KEY;
 // const CURSOR_KEY = "lastCursors";
