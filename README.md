@@ -21,7 +21,7 @@ pnpm install
 3. Rename `.env.sample` to `.env`
 
 ```.env.sample > .env
-...
+mv .env.sample .env
 ```
 
 4. Get Updated Rankings in your DB
