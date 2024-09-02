@@ -210,8 +210,6 @@ export async function postTopRankings() {
     "blocker",
     now
   );
-  console.log(cast1);
-  console.log(cast2);
-  // await createCast(cast1);
-  // await createCast(cast2);
+  await createCast(cast1);
+  await createCast(cast2);
 }
