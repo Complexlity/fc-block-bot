@@ -80,15 +80,18 @@ pnpm run generate
 
 7. Approve the request
 
-8. Copy the `signer_uuid` from the url
+8. Copy the `signer_uuid` from `signerUuid.json`
 
 9. Paste the `signer_uuid` as the value of `SIGNER_UUID`in the .env file
 
-10. Run the bot
+10. Uninstall the extra dependencies
+
+```
+pnpm uninstall @farcaster/hub-nodejs @neynar/nodejs-sdk viem
+```
+
+12. Run the bot
 
 ```
 pnpm run dev
 ```
-
-> [!NOTE]
-> You can remove the extra dependencies once you have a signer.
