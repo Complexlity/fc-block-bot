@@ -6,7 +6,7 @@ dotenv.config();
 const configSchema = z.object({
   REDIS_URL: z.string(),
   REDIS_TOKEN: z.string(),
-  NEYNAR_API_KEY: z.string(),
+  NEYNAR_API_KEY: z.string().default("NEYNAR_API_DOCS"),
   AIRSTACK_API_KEY: z.string().min(1).optional(),
   SIGNER_UUID: z.string(),
   START_CRON_JOB: z.boolean().default(true),
