@@ -135,6 +135,7 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
   const fidsArray = [...fidsSet];
   const res = await sdkInstance.getUsersByFid(fidsArray);
   const unsubscribers = await getUnsubscribersFromFids(fidsArray);
+  console.log({ unsubscribers });
 
   if (res.error) {
     return null;
