@@ -17,10 +17,11 @@ const job = new CronJob(
   "utc"
 );
 
-//Post rankings 12:00 AM UTC
+// Post rankings 12:00 PM UTC
 const job2 = new CronJob("0 12 * * *", postTopRankings, null, true, "utc");
-const BLOCKED_KEY = DEFAULTS.BLOCKED_KEY;
 const BLOCKER_KEY = DEFAULTS.BLOCKER_KEY;
+const BLOCKED_KEY = DEFAULTS.BLOCKED_KEY;
+const UNSUBSCRIBERS_KEY = DEFAULTS.UNSUBSCRIBERS_KEY;
 // const CURSOR_KEY = "lastCursors";
 
 const BLOCKED_API_URL = "https://api.warpcast.com/v1/blocked-users";
@@ -53,12 +54,6 @@ async function main() {
       return;
     }
 
-    // const lastUserIndex = users.findIndex(
-    //   (user) =>
-    //   (user.blockerFid === lastUser.blockerFid &&
-    //     user.blockedFid === lastUser.blockedFid &&
-    //     user.createdAt === lastUser.createdAt)
-    // );
     let lastUserIndex = -1;
     for (let i = 0; i < users.length - 1; i++) {
       const curr = users[i];
@@ -139,16 +134,18 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
   }
   const fidsArray = [...fidsSet];
   const res = await sdkInstance.getUsersByFid(fidsArray);
+  const unsubscribers = await getUnsubscribersFromFids(fidsArray);
+
   if (res.error) {
     return null;
   }
   const users = res.data;
   //convert users to an object with fid as key
   const usersObj = users.reduce((acc, user) => {
-    //@ts-expect-error: Ts is not sure if acc[user.fid] should exist
     acc[user.fid] = user;
     return acc;
-  }, {}) as { [key: number]: (typeof users)[number] };
+  }, {} as { [key: number]: (typeof users)[number] });
+
   const castedChunks: {
     text: string;
     lastUser: BlockedData;
@@ -162,13 +159,14 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
     mentionedUsers.push(blockerDetails.fid);
     mentionedUsers.push(blockedDetails.fid);
     if (blockerDetails && blockedDetails) {
-      texts += `@${
-        blockerDetails.username
-      } has${getRandomClassifier()} blocked @${blockedDetails.username}\n`;
+      const blockerText = getUserTag(blockerDetails, unsubscribers);
+      const blockedText = getUserTag(blockedDetails, unsubscribers);
+      texts += `${blockerText} has${getRandomClassifier()} blocked ${blockedText}\n`;
+
       raw.push(user);
     }
     if (
-      //Check if we're reach the
+      //Farcaster has a limit of 10 mentioned users per cast and around 100 characters per cast
       texts.length > DEFAULTS.MAX_CAST_LENGTH ||
       mentionedUsers.length == 10
     ) {
@@ -196,6 +194,7 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
   for (const chunk of castedChunks) {
     console.log("Creating cast...");
     const res = await createCast(chunk.text);
+    console.log(res);
     if (!!res) {
       const multi = kvStore.multi();
       //cast was created so you can save the last user
@@ -209,4 +208,33 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
       return; //Don't do anything if there was an error. Try again next time
     }
   }
+}
+
+function getUserTag(
+  user: { fid: number; username: string },
+  unsubscribers: Awaited<ReturnType<typeof getUnsubscribersFromFids>>
+) {
+  const unsubscribed = unsubscribers[user.fid];
+  if (unsubscribed) {
+    return user.username;
+  } else {
+    return `@${user.username}`;
+  }
+}
+
+async function getUnsubscribersFromFids(fids: number[]) {
+  const multi = kvStore.multi();
+  //For each fid, check user is in unsubscribers list
+  for (const fid of fids) {
+    multi.sismember(UNSUBSCRIBERS_KEY, fid.toString());
+  }
+  const res = await multi.exec();
+
+  const unsubscribers = res.map((value, index) => {
+    return {
+      [fids[index]]: value === 1,
+    };
+  });
+
+  return unsubscribers;
 }
