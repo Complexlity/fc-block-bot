@@ -194,7 +194,7 @@ async function processBlockedUsers(blockedData: BlockedData[]) {
   for (const chunk of castedChunks) {
     console.log("Creating cast...");
     const res = await createCast(chunk.text);
-    console.log(res);
+
     if (!!res) {
       const multi = kvStore.multi();
       //cast was created so you can save the last user

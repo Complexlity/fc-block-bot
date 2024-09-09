@@ -21,7 +21,13 @@ async function generateIdempotencyKey(input: string) {
   });
 }
 
-export async function createCast(text: string) {
+export async function createCast(
+  text: string,
+  options: {
+    parent?: string;
+    embeds?: { url: string }[];
+  } = {}
+) {
   const idempotencyKey = await generateIdempotencyKey(text);
 
   const body = {
@@ -29,6 +35,7 @@ export async function createCast(text: string) {
     text,
     channel_id: "blockzone",
     idem: idempotencyKey,
+    ...options,
   };
 
   const headers = {
