@@ -215,7 +215,6 @@ function getUserTag(
   user: { fid: number; username: string },
   unsubscribers: Awaited<ReturnType<typeof getUnsubscribersFromFids>>
 ) {
-  return user.username;
   const unsubscribed = unsubscribers[user.fid];
   if (unsubscribed) {
     return user.username;
