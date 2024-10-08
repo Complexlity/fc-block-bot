@@ -1,72 +1,38 @@
-import axios from "axios";
+import { AxiosError } from "axios";
+import type { DataOrError, User, uniFarcasterSdk } from "uni-farcaster-sdk";
 import config from "./config.js";
-import { DEFAULTS } from "./constants.js";
+import { defaults } from "./constants.js";
 import { kvStore, sdkInstance } from "./services.js";
-const CAST_API_URL = "https://api.neynar.com/v2/farcaster/cast";
+import type { BlockedData } from "./types.js";
+import {
+  formatCurrentDate,
+  createTopRankingsCast,
+  chunkArray,
+  delay,
+  getUserTag,
+  getRandomClassifier,
+  generateIdempotencyKey,
+  handleError,
+} from "./helpers.js";
+const BLOCKER_KEY = defaults.BLOCKER_KEY;
+const BLOCKED_KEY = defaults.BLOCKED_KEY;
+const UNSUBSCRIBERS_KEY = defaults.UNSUBSCRIBERS_KEY;
+const CAST_API_URL = defaults.CAST_API_URL;
+const lastUserKey = defaults.LAST_USER_KEY;
 
-async function generateIdempotencyKey(input: string) {
-  // Use the SubtleCrypto API to generate a hash
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-
-  return crypto.subtle.digest("SHA-256", data).then((buffer) => {
-    // Convert buffer to hex string
-    const hashArray = Array.from(new Uint8Array(buffer));
-    const hashHex = hashArray
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    // Return the first 16 characters of the hex string as the idempotency key
-    return hashHex.substring(0, 16);
-  });
-}
-
-export async function createCast(
-  text: string,
-  options: {
-    parent?: string;
-    embeds?: { url: string }[];
-  } = {}
-) {
-  const idempotencyKey = await generateIdempotencyKey(text);
-
-  const body = {
-    signer_uuid: config.SIGNER_UUID,
-    text,
-    channel_id: "blockzone",
-    idem: idempotencyKey,
-    ...options,
-  };
-
-  const headers = {
-    accept: "application/json",
-    api_key: config.NEYNAR_API_KEY,
-  };
-  try {
-    const res = await axios.post(CAST_API_URL, body, {
-      headers,
-    });
-    console.log("Cast created successfully");
-    return res.data;
-  } catch (error) {
-    console.error("Error creating cast:", error);
-    console.log(error);
-    return null;
-  }
-}
-
-async function getMostBlockedUsers(n: number) {
-  const result = await kvStore.zrange(DEFAULTS.BLOCKED_KEY, 0, n - 1, {
+export async function getMostBlockedUsers(n: number) {
+  const result = await kvStore.zrange(defaults.BLOCKED_KEY, 0, n - 1, {
     withScores: true,
     rev: true,
   });
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   const blockedRanking: any[] = [];
 
   const fids = [];
   for (let i = 0; i < result.length; i++) {
     if (i % 2 === 1) continue;
     const curr = Number(result[i]);
-    if (isNaN(curr) || !curr) {
+    if (Number.isNaN(curr) || !curr) {
       throw new Error("Invalid fid in blocked users");
     }
     blockedRanking.push({
@@ -99,17 +65,18 @@ async function getMostBlockedUsers(n: number) {
 }
 
 async function getMostBlockerUsers(n: number) {
-  const result = await kvStore.zrange(DEFAULTS.BLOCKER_KEY, 0, n - 1, {
+  const result = await kvStore.zrange(defaults.BLOCKER_KEY, 0, n - 1, {
     withScores: true,
     rev: true,
   });
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   const blockerRanking: any[] = [];
   const fids = [];
   for (let i = 0; i < result.length; i++) {
     if (i % 2 === 1) continue;
     const curr = Number(result[i]);
-    if (isNaN(curr) || !curr) {
+    if (Number.isNaN(curr) || !curr) {
       throw new Error("Invalid fid in blocked users");
     }
 
@@ -141,54 +108,223 @@ async function getMostBlockerUsers(n: number) {
 
 type T = Awaited<ReturnType<typeof getMostBlockedUsers>>;
 
-function createTopRankingsCast(
-  items: T,
-  type: "blocked" | "blocker",
-  date: string
-) {
-  if (!items) throw new Error("No items found");
-
-  const blockerTitle = `Most Ruthless Blockers: ${date}\n`;
-  const blockedTitle = `Most Blocked Users: ${date}\n`;
-  let cast = `${type === "blocked" ? blockedTitle : blockerTitle}`;
-  let index = 0;
-  for (const item of items) {
-    const text = `${index + 1}. @${item.user.username} - ${item.count}\n`;
-    cast += text;
-    index++;
-  }
-  return cast;
-}
-
-function formatCurrentDate(): string {
-  const now = new Date();
-
-  const day = String(now.getDate()).padStart(2, "0");
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-
-  let hours = now.getHours();
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12;
-  hours = hours ? hours : 12; // the hour '0' should be '12'
-  const formattedHours = String(hours).padStart(2, "0");
-
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-
-  return `${day}/${month} ${formattedHours}:${minutes} ${ampm}`;
-}
-
-export async function postTopRankings() {
+export async function postTopRankings(topX = 10) {
   const now = formatCurrentDate();
   const cast1 = createTopRankingsCast(
-    await getMostBlockedUsers(5),
+    await getMostBlockedUsers(topX),
     "blocked",
     now
   );
   const cast2 = createTopRankingsCast(
-    await getMostBlockerUsers(5),
+    await getMostBlockerUsers(topX),
     "blocker",
     now
   );
   await createCast(cast1);
   await createCast(cast2);
+}
+
+export async function getUsersChunked(
+  sdkInstance: uniFarcasterSdk,
+  fidsArray: number[],
+  chunkSize = 10
+): Promise<DataOrError<User[]>> {
+  const chunks = chunkArray(fidsArray, chunkSize);
+  let allUsers: User[] = [];
+  let error = null;
+
+  for (const chunk of chunks) {
+    try {
+      const res = await sdkInstance.getUsersByFid(chunk);
+      if (res.error) {
+        error = res.error;
+        break;
+      }
+      if (res.data) {
+        allUsers = allUsers.concat(res.data);
+      }
+    } catch (err) {
+      if (err && typeof err === "object" && "message" in err && err.message) {
+        error = { message: err.message };
+      }
+      error = { message: "Something went wrong fetching users" };
+      break;
+    }
+
+    if (chunks.indexOf(chunk) < chunks.length - 1) {
+      await delay(2000); // 2 second delay between chunks
+    }
+  }
+
+  if (error) {
+    return {
+      error,
+      data: null,
+    };
+  }
+  return {
+    data: allUsers,
+    error,
+  };
+}
+
+export async function getUnsubscribersFromFids(fids: number[]) {
+  const multi = kvStore.multi();
+  //For each fid, check user is in unsubscribers list
+  for (const fid of fids) {
+    multi.sismember(UNSUBSCRIBERS_KEY, fid.toString());
+  }
+  const res = await multi.exec();
+
+  const unsubscribers = res.map((value, index) => {
+    return {
+      [fids[index]]: value === 1,
+    };
+  });
+
+  return unsubscribers;
+}
+
+export async function processBlockedUsers(blockedData: BlockedData[]) {
+  let texts = "";
+  let raw = [];
+  let mentionedUsers = [];
+  const fidsSet = new Set<number>();
+  for (const user of blockedData) {
+    fidsSet.add(user.blockedFid);
+    fidsSet.add(user.blockerFid);
+  }
+  const fidsArray = [...fidsSet];
+
+  const res = await getUsersChunked(sdkInstance, fidsArray);
+  const unsubscribers = await getUnsubscribersFromFids(fidsArray);
+  console.log({ unsubscribers });
+
+  if (res.error) {
+    console.log(res.error);
+    return null;
+  }
+
+  const users = res.data;
+
+  //convert users to an object with fid as key
+  const usersObj = users.reduce((acc, user) => {
+    acc[user.fid] = user;
+    return acc;
+  }, {} as { [key: number]: (typeof users)[number] });
+
+  const castedChunks: {
+    text: string;
+    lastUser: BlockedData;
+    raw: BlockedData[];
+  }[] = [];
+  const reversedBlockedData = [...blockedData].reverse();
+
+  for (const user of reversedBlockedData) {
+    const blockerDetails = usersObj[user.blockerFid];
+    const blockedDetails = usersObj[user.blockedFid];
+    mentionedUsers.push(blockerDetails.fid);
+    mentionedUsers.push(blockedDetails.fid);
+    if (blockerDetails && blockedDetails) {
+      const blockerText = getUserTag(blockerDetails, unsubscribers);
+      const blockedText = getUserTag(blockedDetails, unsubscribers);
+      texts += `${blockerText} has${getRandomClassifier()} blocked ${blockedText}\n`;
+
+      raw.push(user);
+    }
+    if (
+      //Farcaster has a limit of 10 mentioned users per cast and around 1000 characters per cast
+      texts.length > defaults.MAX_CAST_LENGTH ||
+      mentionedUsers.length === 10
+    ) {
+      castedChunks.push({
+        text: texts,
+        lastUser: user,
+        raw: raw,
+      });
+      texts = "";
+      mentionedUsers = [];
+      raw = [];
+    }
+  }
+
+  if (texts.length > 0 && reversedBlockedData.length > 0) {
+    //Add the last chunk
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    const lastUser = reversedBlockedData.at(-1)!;
+    castedChunks.push({
+      text: texts,
+      lastUser,
+      raw: raw,
+    });
+  }
+  for (const chunk of castedChunks) {
+    console.log("Creating cast...");
+    const res = await createCast(chunk.text);
+
+    if (res) {
+      const multi = kvStore.multi();
+      //cast was created so you can save the last user
+      for (const user of chunk.raw) {
+        multi.zincrby(BLOCKED_KEY, 1, user.blockedFid.toString());
+        multi.zincrby(BLOCKER_KEY, 1, user.blockerFid.toString());
+      }
+      multi.set(lastUserKey, chunk.lastUser);
+      await multi.exec();
+    } else {
+      return; //Don't do anything if there was an error. Try again next time
+    }
+  }
+}
+
+export async function createCast(
+  text: string,
+  options: { parent?: string; embeds?: { url: string }[] } = {}
+) {
+  try {
+    const idempotencyKey = await generateIdempotencyKey(text);
+
+    const body = {
+      signer_uuid: config.SIGNER_UUID,
+      text,
+      channel_id: "blockzone",
+      idem: idempotencyKey,
+      ...options,
+    };
+
+    const headers = {
+      accept: "application/json",
+      api_key: config.NEYNAR_API_KEY,
+      "Content-Type": "application/json",
+    };
+
+    const res = await fetch(CAST_API_URL, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+
+      if (res.status === 429 && errorData.code === "RateLimitExceeded") {
+        console.warn(
+          "Rate limit exceeded. Waiting for 30 seconds before retrying..."
+        );
+        await delay(60000);
+      }
+
+      console.error("Error creating cast:", errorData);
+      handleError(new Error(`Request failed with status ${res.status}`));
+      return null;
+    }
+
+    const data = await res.json();
+    console.log("Cast created successfully");
+    return data;
+  } catch (error) {
+    console.error("Error creating cast");
+    handleError(error);
+    return null;
+  }
 }

@@ -9,8 +9,8 @@ dependencies:
     specifier: ^1.34.0
     version: 1.34.0
   axios:
-    specifier: ^1.7.5
-    version: 1.7.5
+    specifier: ^1.7.7
+    version: 1.7.7
   cron:
     specifier: ^3.1.7
     version: 3.1.7
@@ -18,8 +18,8 @@ dependencies:
     specifier: ^16.4.5
     version: 16.4.5
   uni-farcaster-sdk:
-    specifier: ^0.0.18
-    version: 0.0.18
+    specifier: ^0.0.25
+    version: 0.0.25
   zod:
     specifier: ^3.23.8
     version: 3.23.8
@@ -54,8 +54,8 @@ packages:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
     dev: false
 
-  /axios@1.7.5:
-    resolution: {integrity: sha512-fZu86yCo+svH3uqJ/yTdQ0QHpQu5oL+/QE+QPSv6BZSkDAoky9vytxp7u5qk83OJFS3kEBcesWni9WTZAv3tSw==}
+  /axios@1.7.7:
+    resolution: {integrity: sha512-S4kL7XrjgBmvdGut0sN3yJxqYzrDOnivkBiN0OFs6hLiUam3UPvswUo0kqGyhqUZGEOytHyumEdXsAkgCOUf3Q==}
     dependencies:
       follow-redirects: 1.15.6
       form-data: 4.0.0
@@ -142,10 +142,10 @@ packages:
     resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
     dev: true
 
-  /uni-farcaster-sdk@0.0.18:
-    resolution: {integrity: sha512-XY2TNsnnwrTg4bw3yHEMVuOrGPoP1G5ZUUCOdNdWOTK8V5vBddUiV7YJT6PbQRLBWbKMFwCF+G2i1x4MbQ7sPg==}
+  /uni-farcaster-sdk@0.0.25:
+    resolution: {integrity: sha512-fcYaOhncI4cQ/eQlbd58yyBsr6ueXlTRNmOY2aqU2jR1WN/UO2iTfKpH1cZBWfh/WfplEYooIFvjca8i4fvUqQ==}
     dependencies:
-      axios: 1.7.5
+      axios: 1.7.7
     transitivePeerDependencies:
       - debug
     dev: false
