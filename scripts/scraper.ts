@@ -1,9 +1,8 @@
 import { Redis } from "@upstash/redis";
 import axios from "axios";
-import config from "../src/utils/config";
-import fs from "fs";
 import uniFarcasterSdk from "uni-farcaster-sdk";
-import { DEFAULTS } from "../src/utils/constants";
+import config from "../src/utils/config";
+import { defaults } from "../src/utils/constants";
 
 const sdkInstance = new uniFarcasterSdk({
   neynarApiKey: config.NEYNAR_API_KEY,
@@ -17,39 +16,6 @@ interface BlockedUser {
   blockedFid: number;
   createdAt: number;
 }
-
-const dummyBlockedUsers: BlockedUser[] = [
-  {
-    blockedFid: 1,
-    blockerFid: 2,
-    createdAt: Date.now(),
-  },
-  {
-    blockedFid: 1,
-    blockerFid: 3,
-    createdAt: Date.now(),
-  },
-  {
-    blockedFid: 3,
-    blockerFid: 2,
-    createdAt: Date.now(),
-  },
-  {
-    blockedFid: 4,
-    blockerFid: 1,
-    createdAt: Date.now(),
-  },
-  {
-    blockedFid: 8446,
-    blockerFid: 3,
-    createdAt: Date.now(),
-  },
-  {
-    blockedFid: 4,
-    blockerFid: 8446,
-    createdAt: Date.now(),
-  },
-];
 
 interface ApiResponse {
   result: {
@@ -69,23 +35,15 @@ const redis = new Redis({
   token: config.REDIS_TOKEN,
 });
 
-const BLOCKED_KEY = DEFAULTS.BLOCKED_KEY;
-const BLOCKER_KEY = DEFAULTS.BLOCKER_KEY;
+const BLOCKED_KEY = defaults.BLOCKED_KEY;
+const BLOCKER_KEY = defaults.BLOCKER_KEY;
 const CURSOR_KEY = "lastCursor";
-
-const getUserKvKey = (fid: number) => `fc_user:${fid}`;
-
-async function getUser(fid: number): Promise<UserDetails> {
-  // Implement your user fetching logic here
-  // For this example, we'll return a mock user
-  return { username: `username_${fid}` };
-}
 
 async function scrapeAndStoreData() {
   let cursor: string | null = null;
   let page = 1;
   let totalUsers = 0;
-  const BLOCKED_API_URL = "https://api.warpcast.com/v1/blocked-users";
+  const BLOCKED_API_URL = defaults.BLOCKED_API_URL;
   do {
     const response = await axios.get<ApiResponse>(BLOCKED_API_URL, {
       params: { cursor },
@@ -140,18 +98,6 @@ async function getMostBlockedUsers(n: number) {
   }
 
   return blockedRanking;
-  // const users = await Promise.all(
-  //   result.map(async ([fid, score]) => {
-  //     const username = await redis.hget(`user:${fid}`, "username");
-  //     return {
-  //       fid: fid as string,
-  //       count: score as number,
-  //       username: username as string,
-  //     };
-  //   })
-  // );
-
-  // return users;
 }
 
 async function getMostBlockerUsers(n: number) {
@@ -175,21 +121,7 @@ async function getMostBlockerUsers(n: number) {
   return blockerRanking;
 }
 
-async function getUserBlockStats(fid: number) {
-  const multi = redis.multi();
-  multi.zscore(BLOCKER_KEY, fid.toString());
-  multi.zrank(BLOCKED_KEY, fid.toString());
-  multi.zscore(BLOCKER_KEY, fid.toString());
-  multi.zrank(BLOCKER_KEY, fid.toString());
-
-  const res = await multi.exec();
-
-  return res;
-}
-
 async function main() {
-  console.log("I am here");
-  return;
   try {
     await redis.del(BLOCKED_KEY, BLOCKER_KEY, CURSOR_KEY);
     await scrapeAndStoreData();
