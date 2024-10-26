@@ -196,7 +196,7 @@ export async function processBlockedUsers(blockedData: BlockedData[]) {
   }
   const fidsArray = [...fidsSet];
 
-  const res = await getUsersChunked(sdkInstance, fidsArray);
+  const res = await getUsersChunked(sdkInstance, fidsArray, 50);
   const unsubscribers = await getUnsubscribersFromFids(fidsArray);
   console.log({ unsubscribers });
 
@@ -223,11 +223,22 @@ export async function processBlockedUsers(blockedData: BlockedData[]) {
   for (const user of reversedBlockedData) {
     const blockerDetails = usersObj[user.blockerFid];
     const blockedDetails = usersObj[user.blockedFid];
-    mentionedUsers.push(blockerDetails.fid);
-    mentionedUsers.push(blockedDetails.fid);
-    if (blockerDetails && blockedDetails) {
-      const blockerText = getUserTag(blockerDetails, unsubscribers);
-      const blockedText = getUserTag(blockedDetails, unsubscribers);
+    mentionedUsers.push(user.blockerFid);
+    mentionedUsers.push(user.blockedFid);
+    if (
+      (blockerDetails || user.blockerFid) &&
+      (blockedDetails || user.blockedFid)
+    ) {
+      const blockerText = blockerDetails
+        ? getUserTag(blockerDetails, unsubscribers)
+        : user.blockerFid
+        ? `fid:${user.blockerFid}`
+        : "unknown";
+      const blockedText = blockedDetails
+        ? getUserTag(blockedDetails, unsubscribers)
+        : user.blockedFid
+        ? `fid:${user.blockedFid}`
+        : "unknown";
       texts += `${blockerText} has${getRandomClassifier()} blocked ${blockedText}\n`;
 
       raw.push(user);
@@ -274,6 +285,9 @@ export async function processBlockedUsers(blockedData: BlockedData[]) {
     } else {
       return; //Don't do anything if there was an error. Try again next time
     }
+
+    //Wait two seconds before trying to cast again
+    await delay(2000);
   }
 }
 
