@@ -1,24 +1,27 @@
-import { AxiosError } from "axios";
 import type { DataOrError, User, uniFarcasterSdk } from "uni-farcaster-sdk";
 import config from "./config.js";
 import { defaults } from "./constants.js";
-import { kvStore, sdkInstance } from "./services.js";
-import type { BlockedData } from "./types.js";
 import {
-  formatCurrentDate,
-  createTopRankingsCast,
   chunkArray,
+  createTopRankingsCast,
   delay,
-  getUserTag,
-  getRandomClassifier,
+  formatCurrentDate,
   generateIdempotencyKey,
+  getRandomClassifier,
+  getUserTag,
   handleError,
 } from "./helpers.js";
+import { kvStore, sdkInstance } from "./services.js";
+import type { BlockedData, CreateCastResult } from "./types.js";
 const BLOCKER_KEY = defaults.BLOCKER_KEY;
 const BLOCKED_KEY = defaults.BLOCKED_KEY;
 const UNSUBSCRIBERS_KEY = defaults.UNSUBSCRIBERS_KEY;
 const CAST_API_URL = defaults.CAST_API_URL;
+const CHANNEL_ID = defaults.CHANNEL_ID;
+const PIN_CAST_API_URL = defaults.PIN_CAST_API_URL;
+const BOT_USERNAME = defaults.BOT_USERNAME
 const lastUserKey = defaults.LAST_USER_KEY;
+
 
 export async function getMostBlockedUsers(n: number) {
   const result = await kvStore.zrange(defaults.BLOCKED_KEY, 0, n - 1, {
@@ -120,8 +123,46 @@ export async function postTopRankings(topX = 10) {
     "blocker",
     now
   );
-  await createCast(cast1);
-  await createCast(cast2);
+
+  const [mostBlockers, mostBlocked] = await Promise.all([createCast(cast2), createCast(cast1)]);
+  if (mostBlockers) {
+    // Pin most blockers cast to CHANNEL_ID
+    await boostCast(mostBlockers.cast.hash, true).then(async () => {
+      if (mostBlocked) {
+        //Quote most blocked cast as a reply to mostBlockers cast
+        const text = `https://farcaster.xyz/${BOT_USERNAME}/${mostBlocked.cast.hash}`;
+        await createCast(text, {
+          parent: mostBlockers.cast.hash,
+        })
+      }
+    }).catch((error) => {
+      console.error("Error boosting most blockers cast:", error);
+    }
+    );
+  }
+
+}
+
+async function boostCast(castHash: string, notifyChannelMembers = false) {
+  const response = await fetch(PIN_CAST_API_URL, {
+    method: "PUT",
+    headers: {
+      "accept": "*/*",
+      "authorization": `Bearer ${config.WARPCAST_AUTH_TOKEN}`,
+      "content-type": "application/json; charset=utf-8",
+    },
+    body: JSON.stringify({
+      castHash,
+      notifyChannelMembers,
+    }),
+  });
+
+  if (!response.ok) {
+    console.log(response.status);
+    throw new Error(`Failed to boost cast: ${response.statusText}`);
+  }
+
+  return response.json();
 }
 
 export async function getUsersChunked(
@@ -232,13 +273,13 @@ export async function processBlockedUsers(blockedData: BlockedData[]) {
       const blockerText = blockerDetails
         ? getUserTag(blockerDetails, unsubscribers)
         : user.blockerFid
-        ? `fid:${user.blockerFid}`
-        : "unknown";
+          ? `fid:${user.blockerFid}`
+          : "unknown";
       const blockedText = blockedDetails
         ? getUserTag(blockedDetails, unsubscribers)
         : user.blockedFid
-        ? `fid:${user.blockedFid}`
-        : "unknown";
+          ? `fid:${user.blockedFid}`
+          : "unknown";
       texts += `${blockerText} has${getRandomClassifier()} blocked ${blockedText}\n`;
 
       raw.push(user);
@@ -291,6 +332,7 @@ export async function processBlockedUsers(blockedData: BlockedData[]) {
   }
 }
 
+
 export async function createCast(
   text: string,
   options: { parent?: string; embeds?: { url: string }[] } = {}
@@ -301,7 +343,7 @@ export async function createCast(
     const body = {
       signer_uuid: config.SIGNER_UUID,
       text,
-      channel_id: "blockzone",
+      channel_id: CHANNEL_ID,
       idem: idempotencyKey,
       ...options,
     };
@@ -316,7 +358,7 @@ export async function createCast(
       method: "POST",
       headers,
       body: JSON.stringify(body),
-    });
+    })
 
     if (!res.ok) {
       const errorData = await res.json();
@@ -333,7 +375,7 @@ export async function createCast(
       return null;
     }
 
-    const data = await res.json();
+    const data = await res.json() as CreateCastResult;
     console.log("Cast created successfully");
     return data;
   } catch (error) {

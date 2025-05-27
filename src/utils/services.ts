@@ -1,6 +1,6 @@
+import { Redis } from "@upstash/redis";
 import uniFarcasterSdk from "uni-farcaster-sdk";
 import config from "./config.js";
-import { Redis } from "@upstash/redis";
 
 export const sdkInstance = new uniFarcasterSdk({
   neynarApiKey: config.NEYNAR_API_KEY,

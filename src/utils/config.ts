@@ -12,6 +12,7 @@ const configSchema = z.object({
   START_CRON_JOB: z.boolean().default(true),
   START_RANKINGS_JOB: z.boolean().default(true),
   FARCASTER_DEVELOPER_MNEMONIC: z.string().optional(),
+  WARPCAST_AUTH_TOKEN: z.string().optional(),
 });
 const START_CRON_JOB = process.env.START_CRON_JOB;
 const START_RANKINGS_JOB = process.env.START_CRON_JOB;
