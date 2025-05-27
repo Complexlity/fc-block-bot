@@ -9,17 +9,17 @@ import type { BlockedData, BlockedFetchResult } from "./utils/types.js";
 import { defaults } from "./utils/constants.js";
 dotenv.config();
 
-// const job = new CronJob(
-//   //Run every minute
-//   "* * * * *",
-//   main,
-//   null,
-//   config.START_CRON_JOB,
-//   "utc"
-// );
+const job = new CronJob(
+  //Run every minute
+  "* * * * *",
+  main,
+  null,
+  config.START_CRON_JOB,
+  "utc"
+);
 
 // Post rankings 12:00 PM UTC
-// const job2 = new CronJob("0 12 * * *", postTopRankings, null, true, "utc");
+const job2 = new CronJob("0 12 * * *", postTopRankings, null, true, "utc");
 
 const BLOCKED_API_URL = defaults.BLOCKED_API_URL;
 const LAST_USER_KEY = defaults.LAST_USER_KEY;
