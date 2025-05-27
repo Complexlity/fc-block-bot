@@ -4,9 +4,7 @@ import { Redis } from "@upstash/redis";
 
 export const sdkInstance = new uniFarcasterSdk({
   neynarApiKey: config.NEYNAR_API_KEY,
-  airstackApiKey: config.AIRSTACK_API_KEY,
-  retryStrategy: "switchTemp",
-  retries: 2,
+  retries: 3,
 });
 
 export const kvStore = new Redis({
