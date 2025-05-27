@@ -16,3 +16,18 @@ export interface BlockedData {
   blockedFid: number;
   createdAt: number;
 }
+
+export interface CreateCastResult {
+  success: boolean;
+  cast:    Cast;
+}
+
+export interface Cast {
+  hash:   string;
+  author: Author;
+  text:   string;
+}
+
+export interface Author {
+  fid: number;
+}
