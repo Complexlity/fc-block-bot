@@ -5,7 +5,7 @@ export const defaults = {
   UNSUBSCRIBERS_KEY: "block-bot-unsubscribers",
   FRAME_URL: "https://fc-block-bot-frame.vercel.app/api",
   CAST_API_URL: "https://api.neynar.com/v2/farcaster/cast",
-  BLOCKED_API_URL: "https://api.warpcast.com/v1/blocked-users",
+  BLOCKED_API_URL: "https://api.warpcast.com/fc/blocked-users",
   PIN_CAST_API_URL: "https://client.farcaster.xyz/v2/boost-cast",
   LAST_USER_KEY: "lastBlockedUser",
   CHANNEL_ID: "blockzone",
